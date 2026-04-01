@@ -75,7 +75,7 @@ export const TaskModal = ({ isOpen, onClose, onSave, editingTask }: TaskModalPro
                   name="title"
                   required
                   defaultValue={editingTask?.title}
-                  placeholder="e.g., Design System Update"
+                  placeholder="Add a new task..."
                   className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-900 focus:border-black focus:ring-4 focus:ring-black/10 outline-none transition-all"
                 />
               </div>
