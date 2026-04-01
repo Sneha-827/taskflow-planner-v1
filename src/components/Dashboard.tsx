@@ -1,0 +1,115 @@
+import { useMemo } from 'react';
+import { LayoutDashboard, AlertCircle, Plus } from 'lucide-react';
+import { Task, DashboardStats } from '../types';
+import { cn } from '../lib/utils';
+import { TaskCard } from './TaskCard';
+
+interface DashboardProps {
+  filteredTasks: Task[];
+  stats: DashboardStats;
+  filter: 'all' | 'work' | 'personal';
+  setFilter: (f: 'all' | 'work' | 'personal') => void;
+  viewTemplate: 'grid' | 'list';
+  onToggle: (id: string) => void;
+  onDelete: (id: string) => void;
+  onEdit: (task: Task) => void;
+  onAddNew: () => void;
+}
+
+export const Dashboard = ({ 
+  filteredTasks, 
+  stats, 
+  filter, 
+  setFilter, 
+  viewTemplate, 
+  onToggle, 
+  onDelete, 
+  onEdit, 
+  onAddNew 
+}: DashboardProps) => {
+  const highPriorityTasks = useMemo(() => filteredTasks.filter(t => t.priority === 'high' && !t.completed), [filteredTasks]);
+  const otherTasks = useMemo(() => filteredTasks.filter(t => t.priority !== 'high' || t.completed), [filteredTasks]);
+
+  return (
+    <div className="space-y-12">
+      <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900">My Tasks</h1>
+          <p className="text-slate-500 mt-1">You have {stats.total - stats.completed} pending tasks today.</p>
+        </div>
+        <div className="flex items-center gap-2 bg-white p-1 rounded-xl shadow-sm border border-slate-200">
+          {(['all', 'work', 'personal'] as const).map((f) => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={cn(
+                "px-4 py-1.5 rounded-lg text-sm font-medium transition-all capitalize",
+                filter === f 
+                  ? "bg-black text-white shadow-md" 
+                  : "text-slate-600 hover:bg-slate-100"
+              )}
+            >
+              {f}
+            </button>
+          ))}
+        </div>
+      </header>
+
+      {highPriorityTasks.length > 0 && (
+        <section className="space-y-4">
+          <div className="flex items-center gap-2 text-black">
+            <AlertCircle size={20} />
+            <h2 className="text-sm font-bold uppercase tracking-widest">High Priority</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {highPriorityTasks.map((task) => (
+              <TaskCard 
+                key={task.id} 
+                task={task} 
+                viewTemplate={viewTemplate} 
+                onToggle={onToggle} 
+                onDelete={onDelete} 
+                onEdit={onEdit}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      <section className="space-y-4">
+        <div className="flex items-center gap-2 text-slate-400">
+          <LayoutDashboard size={20} />
+          <h2 className="text-sm font-bold uppercase tracking-widest">All Tasks</h2>
+        </div>
+        <div className={cn(
+          viewTemplate === 'grid' 
+            ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" 
+            : "space-y-3"
+        )}>
+          {otherTasks.map((task) => (
+            <TaskCard 
+              key={task.id} 
+              task={task} 
+              viewTemplate={viewTemplate} 
+              onToggle={onToggle} 
+              onDelete={onDelete} 
+              onEdit={onEdit}
+            />
+          ))}
+          <button
+            onClick={onAddNew}
+            className={cn(
+              "flex flex-col items-center justify-center gap-3 bg-slate-100/50 border-2 border-dashed border-slate-200 rounded-2xl p-8 text-slate-400 hover:border-slate-300 hover:bg-slate-50 hover:text-black transition-all group",
+              viewTemplate === 'grid' ? "min-h-[200px]" : "py-4 flex-row"
+            )}
+          >
+            <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+              <Plus size={20} />
+            </div>
+            <span className="font-medium">Add New Task</span>
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+};
