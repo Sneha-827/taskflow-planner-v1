@@ -1,19 +1,32 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Plus, CheckCircle, Trash2 } from 'lucide-react';
+import { Plus, CheckCircle, Trash2, Calendar } from 'lucide-react';
 import { Task, Subtask, Category, Priority } from '../types';
-import { cn } from '../lib/utils';
+import { cn, toLocalISOString } from '../lib/utils';
+import { endOfDay, addDays, format } from 'date-fns';
 
 interface TaskModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (task: Partial<Task>) => void;
   editingTask: Task | null;
+  initialDate?: Date;
 }
 
-export const TaskModal = ({ isOpen, onClose, onSave, editingTask }: TaskModalProps) => {
+type DateMode = 'today' | 'tomorrow' | 'custom';
+
+export const TaskModal = ({ isOpen, onClose, onSave, editingTask, initialDate }: TaskModalProps) => {
   const [subtasks, setSubtasks] = useState<Subtask[]>(editingTask?.subtasks || []);
   const [newSubtask, setNewSubtask] = useState('');
+  const [dateMode, setDateMode] = useState<DateMode>(editingTask ? 'custom' : (initialDate ? 'custom' : 'today'));
+  
+  const getInitialCustomDate = () => {
+    if (editingTask?.deadline) return toLocalISOString(new Date(editingTask.deadline));
+    if (initialDate) return toLocalISOString(new Date(new Date(initialDate).setHours(23, 59, 59, 999)));
+    return toLocalISOString(new Date(new Date().setHours(23, 59, 59, 999)));
+  };
+  
+  const [customDate, setCustomDate] = useState<string>(getInitialCustomDate());
 
   const handleAddSubtask = () => {
     if (newSubtask.trim()) {
@@ -45,29 +58,39 @@ export const TaskModal = ({ isOpen, onClose, onSave, editingTask }: TaskModalPro
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="relative w-full max-w-xl bg-white rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col border border-slate-200"
+        className="relative w-full max-w-xl bg-white rounded-t-3xl md:rounded-3xl shadow-2xl overflow-hidden max-h-[95vh] md:max-h-[90vh] flex flex-col border border-slate-200 mt-auto md:mt-0"
       >
         <form onSubmit={(e) => {
           e.preventDefault();
           const formData = new FormData(e.currentTarget);
+          
+          let deadline: string | undefined;
+          if (dateMode === 'today') {
+            deadline = endOfDay(new Date()).toISOString();
+          } else if (dateMode === 'tomorrow') {
+            deadline = endOfDay(addDays(new Date(), 1)).toISOString();
+          } else {
+            deadline = formData.get('deadline') ? new Date(formData.get('deadline') as string).toISOString() : undefined;
+          }
+
           onSave({
             title: formData.get('title') as string,
             description: formData.get('description') as string,
             category: formData.get('category') as Category,
             priority: formData.get('priority') as Priority,
-            deadline: formData.get('deadline') ? new Date(formData.get('deadline') as string).toISOString() : undefined,
+            deadline,
             notificationTime: parseInt(formData.get('notificationTime') as string),
             subtasks: subtasks,
           });
         }} className="flex flex-col h-full">
-          <div className="p-8 pb-4 flex items-center justify-between border-b border-slate-100">
-            <h2 className="text-2xl font-bold text-slate-900">{editingTask ? 'Edit Task' : 'Create New Task'}</h2>
-            <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600">
+          <div className="p-6 md:p-8 pb-4 flex items-center justify-between border-b border-slate-100">
+            <h2 className="text-xl md:text-2xl font-bold text-slate-900">{editingTask ? 'Edit Task' : 'Create New Task'}</h2>
+            <button type="button" onClick={onClose} className="p-2 -m-2 text-slate-400 hover:text-slate-600">
               <Plus className="rotate-45" size={24} />
             </button>
           </div>
 
-          <div className="p-8 pt-4 space-y-6 overflow-y-auto flex-1">
+          <div className="p-6 md:p-8 pt-4 space-y-6 overflow-y-auto flex-1 no-scrollbar">
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">Task Title</label>
@@ -109,25 +132,50 @@ export const TaskModal = ({ isOpen, onClose, onSave, editingTask }: TaskModalPro
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Deadline</label>
-                  <input 
-                    name="deadline"
-                    type="datetime-local"
-                    defaultValue={editingTask?.deadline ? new Date(editingTask.deadline).toISOString().slice(0, 16) : ''}
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-900 focus:border-black outline-none transition-all"
-                  />
+              <div className="space-y-3">
+                <label className="block text-sm font-semibold text-slate-700">Deadline</label>
+                <div className="flex gap-2">
+                  {(['today', 'tomorrow', 'custom'] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => setDateMode(mode)}
+                      className={cn(
+                        "flex-1 py-2 px-3 rounded-xl border text-sm font-medium transition-all capitalize",
+                        dateMode === mode 
+                          ? "bg-black text-white border-black" 
+                          : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
+                      )}
+                    >
+                      {mode === 'custom' ? 'Pick a date' : mode}
+                    </button>
+                  ))}
                 </div>
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Notify Me</label>
-                  <select name="notificationTime" defaultValue={editingTask?.notificationTime || 60} className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-900 focus:border-black outline-none transition-all">
-                    <option value="15">15 mins before</option>
-                    <option value="30">30 mins before</option>
-                    <option value="60">1 hour before</option>
-                    <option value="1440">1 day before</option>
-                  </select>
-                </div>
+                
+                {dateMode === 'custom' && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                  >
+                    <input 
+                      name="deadline"
+                      type="datetime-local"
+                      value={customDate}
+                      onChange={(e) => setCustomDate(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-900 focus:border-black outline-none transition-all"
+                    />
+                  </motion.div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Notify Me</label>
+                <select name="notificationTime" defaultValue={editingTask?.notificationTime || 60} className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-900 focus:border-black outline-none transition-all">
+                  <option value="15">15 mins before</option>
+                  <option value="30">30 mins before</option>
+                  <option value="60">1 hour before</option>
+                  <option value="1440">1 day before</option>
+                </select>
               </div>
 
               <div>
@@ -175,19 +223,19 @@ export const TaskModal = ({ isOpen, onClose, onSave, editingTask }: TaskModalPro
             </div>
           </div>
 
-          <div className="p-8 pt-4 flex gap-3 border-t border-slate-100">
+          <div className="p-6 md:p-8 pt-4 flex gap-3 border-t border-slate-100 bg-white">
             <button 
               type="button"
               onClick={onClose}
-              className="flex-1 px-6 py-3 rounded-xl font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
+              className="flex-1 px-6 py-4 rounded-xl font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
             >
               Cancel
             </button>
             <button 
               type="submit"
-              className="flex-1 px-6 py-3 bg-black text-white rounded-xl font-semibold shadow-lg shadow-black/30 hover:bg-slate-800 transition-all"
+              className="flex-1 px-6 py-4 bg-black text-white rounded-xl font-semibold shadow-lg shadow-black/30 hover:bg-slate-800 transition-all"
             >
-              {editingTask ? 'Update Task' : 'Create Task'}
+              {editingTask ? 'Update' : 'Create'}
             </button>
           </div>
         </form>

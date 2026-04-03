@@ -1,11 +1,14 @@
-import { useMemo } from 'react';
-import { LayoutDashboard, AlertCircle, Plus } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { LayoutDashboard, AlertCircle, Plus, Calendar } from 'lucide-react';
+import { isToday, isTomorrow, isAfter, startOfToday, startOfTomorrow, addDays } from 'date-fns';
 import { Task, DashboardStats } from '../types';
 import { cn } from '../lib/utils';
 import { TaskCard } from './TaskCard';
 
+type DateFilter = 'all' | 'today' | 'tomorrow' | 'upcoming';
+
 interface DashboardProps {
-  filteredTasks: Task[];
+  tasks: Task[];
   stats: DashboardStats;
   filter: 'all' | 'work' | 'personal';
   setFilter: (f: 'all' | 'work' | 'personal') => void;
@@ -17,7 +20,7 @@ interface DashboardProps {
 }
 
 export const Dashboard = ({ 
-  filteredTasks, 
+  tasks, 
   stats, 
   filter, 
   setFilter, 
@@ -27,31 +30,84 @@ export const Dashboard = ({
   onEdit, 
   onAddNew 
 }: DashboardProps) => {
+  const [dateFilter, setDateFilter] = useState<DateFilter>('all');
+
+  const filteredTasks = useMemo(() => {
+    // Global filter: Hide completed tasks from dashboard views
+    let result = tasks.filter(t => !t.completed && (filter === 'all' || t.category === filter));
+    
+    if (dateFilter !== 'all') {
+      const today = startOfToday();
+      const tomorrow = startOfTomorrow();
+      
+      result = result.filter(t => {
+        if (!t.deadline) return dateFilter === 'upcoming';
+        const deadline = new Date(t.deadline);
+        
+        if (dateFilter === 'today') {
+          // Show if deadline is today or in the future
+          return isAfter(deadline, today) || isToday(deadline);
+        }
+        if (dateFilter === 'tomorrow') {
+          // Show if deadline is tomorrow or in the future
+          return isAfter(deadline, tomorrow) || isTomorrow(deadline);
+        }
+        if (dateFilter === 'upcoming') {
+          // Show if deadline is after tomorrow
+          return isAfter(deadline, addDays(today, 1)) && !isTomorrow(deadline);
+        }
+        return true;
+      });
+    }
+    
+    return result;
+  }, [tasks, filter, dateFilter]);
+
   const highPriorityTasks = useMemo(() => filteredTasks.filter(t => t.priority === 'high' && !t.completed), [filteredTasks]);
   const otherTasks = useMemo(() => filteredTasks.filter(t => t.priority !== 'high' || t.completed), [filteredTasks]);
 
   return (
     <div className="space-y-12">
-      <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+      <header className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">My Tasks</h1>
-          <p className="text-slate-500 mt-1">You have {stats.total - stats.completed} pending tasks today.</p>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900">My Tasks</h1>
+          <p className="text-slate-500 mt-1 text-sm md:text-base">You have {stats.total - stats.completed} pending tasks today.</p>
         </div>
-        <div className="flex items-center gap-2 bg-white p-1 rounded-xl shadow-sm border border-slate-200">
-          {(['all', 'work', 'personal'] as const).map((f) => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={cn(
-                "px-4 py-1.5 rounded-lg text-sm font-medium transition-all capitalize",
-                filter === f 
-                  ? "bg-black text-white shadow-md" 
-                  : "text-slate-600 hover:bg-slate-100"
-              )}
-            >
-              {f}
-            </button>
-          ))}
+        
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center gap-2 bg-slate-50 p-1 rounded-xl border border-slate-200 overflow-x-auto no-scrollbar">
+            {(['all', 'work', 'personal'] as const).map((f) => (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                className={cn(
+                  "px-5 py-2.5 rounded-lg text-sm font-medium transition-all capitalize whitespace-nowrap min-w-[80px]",
+                  filter === f 
+                    ? "bg-black text-white shadow-md" 
+                    : "text-slate-600 hover:bg-slate-100"
+                )}
+              >
+                {f}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-2 bg-slate-50 p-1 rounded-xl border border-slate-200 overflow-x-auto no-scrollbar">
+            {(['all', 'today', 'tomorrow', 'upcoming'] as const).map((df) => (
+              <button
+                key={df}
+                onClick={() => setDateFilter(df)}
+                className={cn(
+                  "px-5 py-2.5 rounded-lg text-sm font-medium transition-all capitalize whitespace-nowrap min-w-[80px]",
+                  dateFilter === df 
+                    ? "bg-black text-white shadow-md" 
+                    : "text-slate-600 hover:bg-slate-100"
+                )}
+              >
+                {df}
+              </button>
+            ))}
+          </div>
         </div>
       </header>
 

@@ -17,6 +17,7 @@ export interface Task {
   notificationTime?: number; // Minutes before deadline
   notified?: boolean;
   completed: boolean;
+  completedAt?: string; // ISO string
   subtasks: Subtask[];
   createdAt: string;
 }

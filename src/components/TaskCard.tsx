@@ -31,19 +31,19 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, viewTemplate, onToggle
         <button 
           onClick={(e) => { e.stopPropagation(); onToggle(task.id); }}
           className={cn(
-            "mt-1 transition-colors",
+            "mt-1 p-2 -m-2 transition-colors",
             task.completed ? "text-black" : "text-slate-300 hover:text-slate-600"
           )}
         >
           {task.completed ? <CheckCircle2 size={24} /> : <Circle size={24} />}
         </button>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
           <PriorityBadge priority={task.priority} />
           <button 
             onClick={(e) => { e.stopPropagation(); onDelete(task.id); }} 
-            className="text-slate-300 hover:text-black transition-colors"
+            className="p-2 -m-2 text-slate-300 hover:text-black transition-colors"
           >
-            <Trash2 size={18} />
+            <Trash2 size={20} />
           </button>
         </div>
       </div>
@@ -52,7 +52,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, viewTemplate, onToggle
         <button 
           onClick={(e) => { e.stopPropagation(); onToggle(task.id); }}
           className={cn(
-            "transition-colors shrink-0",
+            "p-2 -m-2 transition-colors shrink-0",
             task.completed ? "text-black" : "text-slate-300 hover:text-slate-600"
           )}
         >
