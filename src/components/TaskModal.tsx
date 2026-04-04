@@ -84,10 +84,21 @@ export const TaskModal = ({ isOpen, onClose, onSave, editingTask, initialDate }:
           });
         }} className="flex flex-col h-full">
           <div className="p-6 md:p-8 pb-4 flex items-center justify-between border-b border-slate-100">
-            <h2 className="text-xl md:text-2xl font-bold text-slate-900">{editingTask ? 'Edit Task' : 'Create New Task'}</h2>
-            <button type="button" onClick={onClose} className="p-2 -m-2 text-slate-400 hover:text-slate-600">
-              <Plus className="rotate-45" size={24} />
-            </button>
+            <div className="flex flex-col">
+              <h2 className="text-xl md:text-2xl font-bold text-slate-900 leading-none">{editingTask ? 'Edit Task' : 'New Task'}</h2>
+              <span className="text-[10px] text-slate-400 uppercase tracking-widest font-bold mt-1">Fill in the details below</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button 
+                type="submit"
+                className="md:hidden px-4 py-2 bg-black text-white text-xs font-bold rounded-lg shadow-lg shadow-black/20 active:scale-95 transition-transform"
+              >
+                Save
+              </button>
+              <button type="button" onClick={onClose} className="p-2 -m-2 text-slate-400 hover:text-slate-600">
+                <Plus className="rotate-45" size={24} />
+              </button>
+            </div>
           </div>
 
           <div className="p-6 md:p-8 pt-4 space-y-6 overflow-y-auto flex-1 no-scrollbar">
@@ -233,9 +244,9 @@ export const TaskModal = ({ isOpen, onClose, onSave, editingTask, initialDate }:
             </button>
             <button 
               type="submit"
-              className="flex-1 px-6 py-4 bg-black text-white rounded-xl font-semibold shadow-lg shadow-black/30 hover:bg-slate-800 transition-all"
+              className="flex-1 px-6 py-4 bg-black text-white rounded-xl font-semibold shadow-lg shadow-black/30 hover:bg-slate-800 transition-all active:scale-95"
             >
-              {editingTask ? 'Update' : 'Create'}
+              {editingTask ? 'Save Changes' : 'Submit Task'}
             </button>
           </div>
         </form>

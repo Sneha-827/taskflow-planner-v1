@@ -255,6 +255,7 @@ export default function App() {
                   onDelete={deleteTask}
                   onEdit={(task) => { setEditingTask(task); setInitialDate(undefined); setIsModalOpen(true); }}
                   onAddNew={() => { setEditingTask(null); setInitialDate(undefined); setIsModalOpen(true); }}
+                  onSave={addTask}
                 />
               )}
               {activeTab === 'calendar' && (
