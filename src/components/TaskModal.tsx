@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import { Plus, CheckCircle, Trash2, Calendar } from 'lucide-react';
 import { Task, Subtask, Category, Priority } from '../types';
@@ -19,6 +19,7 @@ export const TaskModal = ({ isOpen, onClose, onSave, editingTask, initialDate }:
   const [subtasks, setSubtasks] = useState<Subtask[]>(editingTask?.subtasks || []);
   const [newSubtask, setNewSubtask] = useState('');
   const [dateMode, setDateMode] = useState<DateMode>(editingTask ? 'custom' : (initialDate ? 'custom' : 'today'));
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   
   const getInitialCustomDate = () => {
     if (editingTask?.deadline) return toLocalISOString(new Date(editingTask.deadline));
@@ -32,6 +33,16 @@ export const TaskModal = ({ isOpen, onClose, onSave, editingTask, initialDate }:
     if (newSubtask.trim()) {
       setSubtasks([...subtasks, { id: Math.random().toString(36).substr(2, 9), title: newSubtask.trim(), completed: false }]);
       setNewSubtask('');
+      
+      // Scroll to bottom after state update
+      setTimeout(() => {
+        if (scrollContainerRef.current) {
+          scrollContainerRef.current.scrollTo({
+            top: scrollContainerRef.current.scrollHeight,
+            behavior: 'smooth'
+          });
+        }
+      }, 100);
     }
   };
 
@@ -46,7 +57,7 @@ export const TaskModal = ({ isOpen, onClose, onSave, editingTask, initialDate }:
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 md:p-6">
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -58,8 +69,9 @@ export const TaskModal = ({ isOpen, onClose, onSave, editingTask, initialDate }:
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="relative w-full max-w-xl bg-white rounded-t-3xl md:rounded-3xl shadow-2xl overflow-hidden max-h-[95vh] md:max-h-[90vh] flex flex-col border border-slate-200 mt-auto md:mt-0"
+        className="relative w-full max-w-xl bg-white rounded-3xl shadow-2xl flex flex-col border border-slate-200 max-h-[85vh] md:max-h-[90vh] mx-4 md:mx-0 overflow-hidden"
       >
+        <div className="md:hidden w-12 h-1.5 bg-slate-200 rounded-full mx-auto mt-3 mb-1 shrink-0" />
         <form onSubmit={(e) => {
           e.preventDefault();
           const formData = new FormData(e.currentTarget);
@@ -93,8 +105,11 @@ export const TaskModal = ({ isOpen, onClose, onSave, editingTask, initialDate }:
             </button>
           </div>
 
-          <div className="p-6 md:p-8 pt-4 space-y-6 overflow-y-auto flex-1 no-scrollbar">
-            <div className="space-y-4">
+          <div 
+            ref={scrollContainerRef}
+            className="p-6 md:p-8 pt-4 space-y-6 overflow-y-auto flex-1 touch-pan-y min-h-0"
+          >
+            <div className="space-y-4 pb-10">
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">Task Title</label>
                 <input 
@@ -110,10 +125,10 @@ export const TaskModal = ({ isOpen, onClose, onSave, editingTask, initialDate }:
                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">Description</label>
                 <textarea 
                   name="description"
-                  rows={2}
+                  rows={4}
                   defaultValue={editingTask?.description}
                   placeholder="Add more details about this task..."
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-900 focus:border-black focus:ring-4 focus:ring-black/10 outline-none transition-all resize-none"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-900 focus:border-black focus:ring-4 focus:ring-black/10 outline-none transition-all overflow-y-auto"
                 />
               </div>
 
@@ -199,7 +214,7 @@ export const TaskModal = ({ isOpen, onClose, onSave, editingTask, initialDate }:
                     <Plus size={20} />
                   </button>
                 </div>
-                <div className="space-y-2 max-h-32 overflow-y-auto pr-2">
+                <div className="space-y-2 pr-2">
                   {subtasks.map((s) => (
                     <div key={s.id} className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100">
                       <div className="flex items-center gap-2">
